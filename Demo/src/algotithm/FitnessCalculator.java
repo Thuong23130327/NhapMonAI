@@ -1,29 +1,20 @@
 package algotithm;
 
-import java.time.DayOfWeek; // <-- THÊM IMPORT NÀY
+import model.*;
+import data.ProblemData;
+import java.time.DayOfWeek;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import data.ProblemData;
-import model.ElectiveRequirement;
-import model.Lecturer;
-import model.ScheduledClass;
-import model.Timetable;
-
 /**
- * ========================================================================= 5.
- * FITNESS FUNCTION (ĐÃ SỬA LỖI TYPE MISMATCH) - Sửa lỗi Map<Integer, ...> thành
- * Map<DayOfWeek, ...> - Sửa 1 lỗi logic nhỏ ở Mềm 4 (Di chuyển xa GV)
- * =========================================================================
+ * FITNESS FUNCTION (CẬP NHẬT LOGIC LỚP & NHÓM THỰC HÀNH)
  */
 public class FitnessCalculator {
-	// Các mức điểm
-	final int HARD_CONSTRAINT_PENALTY = -1000; // Phạt Cứng
-	final int SOFT_CONSTRAINT_PENALTY = -10; // Phạt Mềm
-	final int SOFT_CONSTRAINT_BONUS = 5; // Thưởng Mềm
+	final int HARD_CONSTRAINT_PENALTY = -1000;
+	final int SOFT_CONSTRAINT_PENALTY = -10;
+	final int SOFT_CONSTRAINT_BONUS = 5;
 
 	ProblemData data;
 
@@ -31,21 +22,29 @@ public class FitnessCalculator {
 		this.data = data;
 	}
 
-	private boolean isFar(String cluster1, String cluster2) {
-		if (cluster1 == null || cluster2 == null || cluster1.equals(cluster2)) {
-			return false;
+	// Lớp gốc
+	private String getBaseClass(String groupName) {
+		if (groupName.contains("_")) {
+			return groupName.split("_")[0];
 		}
-		String c_A = ProblemData.CLUSTER_A_TV_HD_CT;
-		String c_B = ProblemData.CLUSTER_B_RD_PV;
-		String c_C = ProblemData.CLUSTER_C_A1_A2;
-		if (cluster1.equals(c_A) && (cluster2.equals(c_B) || cluster2.equals(c_C)))
+		return groupName;
+	}
+
+	// Check xem co xa nhau qua ko
+	private boolean isFar(String cluster1, String cluster2) {
+		if (cluster1 == null || cluster2 == null || cluster1.equalsIgnoreCase(cluster2))
+			return false;
+		String cumTV = ProblemData.CLUSTER_A_TV_HD_CT;
+		String cumRD = ProblemData.CLUSTER_B_RD_PV;
+		String cumA1 = ProblemData.CLUSTER_C_A1_A2;
+		if (cluster1.equals(cumTV) && (cluster2.equals(cumRD) || cluster2.equals(cumA1)))
 			return true;
-		if (cluster2.equals(c_A) && (cluster1.equals(c_B) || cluster1.equals(c_C)))
+		if (cluster2.equals(cumTV) && (cluster1.equals(cumRD) || cluster1.equals(cumA1)))
 			return true;
-		if (cluster1.equals(c_B) && cluster2.equals(c_C))
-			return true;
-		if (cluster2.equals(c_B) && cluster1.equals(c_C))
-			return true;
+		if (cluster1.equals(cumRD) && cluster2.equals(cumA1))
+			return false;
+		if (cluster2.equals(cumRD) && cluster1.equals(cumA1))
+			return false;
 		return false;
 	}
 
@@ -58,233 +57,124 @@ public class FitnessCalculator {
 		timetable.clearViolations();
 		List<ScheduledClass> schedule = timetable.getSchedule();
 
-		// --- 2. KIỂM TRA RÀNG BUỘC CỨNG (HARD CONSTRAINTS) ---
-
+		// --- KIỂM TRA RÀNG BUỘC CỨNG ---
 		for (int i = 0; i < schedule.size(); i++) {
 			ScheduledClass classA = schedule.get(i);
 
-			// Lỗi 1: Sức chứa
+			// 1, 2, 3. Lỗi Sức chứa, Loại phòng, Chuyên môn (Giữ nguyên)
 			if (classA.getCourse().getStudentCount() > classA.getRoom().getCapacity()) {
 				currentFitness += HARD_CONSTRAINT_PENALTY;
 				hardViolations++;
-				timetable.addViolation(String.format("CỨNG: %s (%d SV) quá tải cho P: %s (chứa %d)",
-						classA.getCourse().getName(), classA.getCourse().getStudentCount(), classA.getRoom().getId(),
-						classA.getRoom().getCapacity()));
+				timetable.addViolation("CỨNG: Quá tải phòng " + classA.getRoom().getId());
 			}
-
-			// Lỗi 2: Loại phòng
-			if (!classA.getCourse().getRequiredRoomType().equals(classA.getRoom().getType())) {
+			if (!classA.getCourse().getRequiredRoomType().equalsIgnoreCase(classA.getRoom().getType())) {
 				currentFitness += HARD_CONSTRAINT_PENALTY;
 				hardViolations++;
-				timetable.addViolation(String.format("CỨNG: %s (cần phòng %s) bị xếp vào P: %s (loại %s)",
-						classA.getCourse().getName(), classA.getCourse().getRequiredRoomType(),
-						classA.getRoom().getId(), classA.getRoom().getType()));
+				timetable.addViolation("CỨNG: Sai loại phòng môn " + classA.getCourse().getName());
 			}
-
-			// Lỗi 3: Chuyên môn
 			if (!classA.getLecturer().getQualifiedCourseIds().contains(classA.getCourse().getId())) {
 				currentFitness += HARD_CONSTRAINT_PENALTY;
 				hardViolations++;
-				timetable.addViolation(String.format("CỨNG: GV %s không có chuyên môn dạy môn %s",
-						classA.getLecturer().getName(), classA.getCourse().getName()));
+				timetable.addViolation("CỨNG: GV " + classA.getLecturer().getName() + " trái chuyên môn");
 			}
-
-			// Lỗi 4, 5, 6: Xung đột (Trùng GV, Phòng, SV)
+			// Lặp lòng
+			// Check với cái ca học tiếp theo
 			for (int j = i + 1; j < schedule.size(); j++) {
 				ScheduledClass classB = schedule.get(j);
+
 				if (classA.getTimeSlot().overlapsWith(classB.getTimeSlot())) {
+					// Lỗi 4: Trùng GV
 					if (classA.getLecturer().getId().equals(classB.getLecturer().getId())) {
 						currentFitness += HARD_CONSTRAINT_PENALTY;
 						hardViolations++;
-						timetable.addViolation(
-								String.format("CỨNG: TRÙNG LỊCH GV! %s (dạy %s và %s) tại %s (Tiết %d-%d)",
-										classA.getLecturer().getName(), classA.getCourse().getName(),
-										classB.getCourse().getName(), classA.getTimeSlot().getDay(),
-										classA.getTimeSlot().getStartPeriod(), classA.getTimeSlot().getEndPeriod()));
+						timetable.addViolation("CỨNG: GV " + classA.getLecturer().getName() + " bị trùng lịch.");
 					}
+					// Lỗi 5: Trùng Phòng
 					if (classA.getRoom().getId().equals(classB.getRoom().getId())) {
 						currentFitness += HARD_CONSTRAINT_PENALTY;
 						hardViolations++;
-						timetable.addViolation(
-								String.format("CỨNG: TRÙNG PHÒNG! P: %s (lớp %s và %s) tại %s (Tiết %d-%d)",
-										classA.getRoom().getId(), classA.getCourse().getName(),
-										classB.getCourse().getName(), classA.getTimeSlot().getDay(),
-										classA.getTimeSlot().getStartPeriod(), classA.getTimeSlot().getEndPeriod()));
+						timetable.addViolation("CỨNG: Phòng " + classA.getRoom().getId() + " bị trùng.");
 					}
-					if (classA.getCourse().getStudentGroup().equals(classB.getCourse().getStudentGroup())) {
+
+					// --- LỖI 6: TRÙNG LỊCH SINH VIÊN (LOGIC MỚI QUAN TRỌNG) ---
+					String groupA = classA.getCourse().getStudentGroup(); // VD: DH23DTC
+					String groupB = classB.getCourse().getStudentGroup(); // VD: DH23DTC_N1
+
+					// Trường hợp 1: Trùng hoàn toàn (VD: 2 môn Lý thuyết của DH23DTC cùng giờ) ->
+					// PHẠT
+					boolean exactMatch = groupA.equals(groupB);
+
+					// Trường hợp 2: Quan hệ Cha-Con (Lý thuyết vs Thực hành) -> PHẠT
+					// (DH23DTC trùng DH23DTC_N1) -> Sinh viên không thể phân thân
+					boolean parentChildConflict = groupA.equals(getBaseClass(groupB))
+							|| groupB.equals(getBaseClass(groupA));
+
+					// Trường hợp 3: Anh em song sinh (Thực hành N1 vs Thực hành N2) -> KHÔNG PHẠT
+					// (DH23DTC_N1 và DH23DTC_N2 khác nhau và không ai chứa ai)
+
+					if (exactMatch || parentChildConflict) {
 						currentFitness += HARD_CONSTRAINT_PENALTY;
 						hardViolations++;
-						timetable.addViolation(
-								String.format("CỨNG: TRÙNG LỊCH SV! Nhóm %s (học %s và %s) tại %s (Tiết %d-%d)",
-										classA.getCourse().getStudentGroup(), classA.getCourse().getName(),
-										classB.getCourse().getName(), classA.getTimeSlot().getDay(),
-										classA.getTimeSlot().getStartPeriod(), classA.getTimeSlot().getEndPeriod()));
+						timetable.addViolation(String.format("CỨNG: Trùng lịch SV! Nhóm %s và %s tại %s", groupA,
+								groupB, classA.getTimeSlot().getDay()));
 					}
 				}
 			}
 		}
 
-		Map<String, List<ScheduledClass>> classesByGroup = schedule.stream()
-				.collect(Collectors.groupingBy(sc -> sc.getCourse().getStudentGroup()));
+		// --- KIỂM TRA RÀNG BUỘC MỀM ---
 
-		// Lỗi 7: Tiên quyết
-		for (Map.Entry<String, List<ScheduledClass>> entry : classesByGroup.entrySet()) {
-			String studentGroup = entry.getKey();
-			List<ScheduledClass> groupSchedule = entry.getValue();
-			Set<String> courseIdsInSemester = groupSchedule.stream().map(sc -> sc.getCourse().getId())
-					.collect(Collectors.toSet());
+		// Gom nhóm theo LỚP GỐC (Base Class) để xét lỗ hổng/đi xa
+		// Nghĩa là DH23DTC, DH23DTC_N1, DH23DTC_N2 đều được gom vào 1 lịch chung để
+		// kiểm tra
+		Map<String, List<ScheduledClass>> classesByBaseGroup = schedule.stream()
+				.collect(Collectors.groupingBy(sc -> getBaseClass(sc.getCourse().getStudentGroup())));
 
-			for (ScheduledClass sc : groupSchedule) {
-				for (String prereqId : sc.getCourse().getPrerequisiteCourseIds()) {
-					if (courseIdsInSemester.contains(prereqId)) {
-						currentFitness += HARD_CONSTRAINT_PENALTY;
-						hardViolations++;
-						String prereqName = data.getCourseById(prereqId) != null
-								? data.getCourseById(prereqId).getName()
-								: prereqId;
-						timetable.addViolation(String.format("CỨNG: VI PHẠM TIÊN QUYẾT! Nhóm %s học %s cùng kỳ với %s",
-								studentGroup, sc.getCourse().getName(), prereqName));
-					}
-				}
-			}
-		}
+		for (Map.Entry<String, List<ScheduledClass>> entry : classesByBaseGroup.entrySet()) {
+			String baseGroup = entry.getKey(); // VD: DH23DTC
 
-		// Lỗi CỨNG 8: Tín chỉ tự chọn
-		for (ElectiveRequirement req : data.getElectiveRequirements()) {
-			String studentGroup = req.getStudentGroupId();
-			List<ScheduledClass> groupSchedule = classesByGroup.get(studentGroup);
-
-			if (groupSchedule == null)
-				continue; // Nhóm này không học kỳ này
-
-			int totalElectiveCredits = 0;
-			for (ScheduledClass sc : groupSchedule) {
-				if (req.getElectiveCourseIds().contains(sc.getCourse().getId())) {
-					totalElectiveCredits += sc.getCourse().getCredits();
-				}
-			}
-
-			if (totalElectiveCredits < req.getCreditsRequired()) {
-				currentFitness += HARD_CONSTRAINT_PENALTY;
-				hardViolations++;
-				timetable.addViolation(String.format("CỨNG: Nhóm %s thiếu tín chỉ tự chọn! (Có %d / Yêu cầu %d)",
-						studentGroup, totalElectiveCredits, req.getCreditsRequired()));
-			}
-		}
-
-		// --- 3. KIỂM TRA RÀNG BUỘC MỀM (SOFT CONSTRAINTS) ---
-
-		// Mềm 1 & 2: Sở thích Giảng viên
-		for (ScheduledClass sc : schedule) {
-			String timeSlotId = sc.getTimeSlot().getId();
-			if (sc.getLecturer().getPreferredTimeSlotIds().contains(timeSlotId)) {
-				currentFitness += SOFT_CONSTRAINT_BONUS;
-				bonusPoints++;
-			}
-			if (sc.getLecturer().getUndesiredTimeSlotIds().contains(timeSlotId)) {
-				currentFitness += SOFT_CONSTRAINT_PENALTY;
-				softViolations++;
-				timetable.addViolation(String.format("MỀM: GV %s bị xếp vào giờ 'không muốn' (%s, %s Tiết %d-%d)",
-						sc.getLecturer().getName(), sc.getTimeSlot().getId(), sc.getTimeSlot().getDay(),
-						sc.getTimeSlot().getStartPeriod(), sc.getTimeSlot().getEndPeriod()));
-			}
-		}
-
-		// Mềm 3, 5, 6: Di chuyển xa, Lỗ hổng, Quá tải (Sinh viên)
-		for (Map.Entry<String, List<ScheduledClass>> entry : classesByGroup.entrySet()) {
-			String studentGroup = entry.getKey();
-
-			// ****** SỬA LỖI 1: Đổi Map<Integer, ...> thành Map<DayOfWeek, ...> ******
 			Map<DayOfWeek, List<ScheduledClass>> classesByDay = entry.getValue().stream()
 					.collect(Collectors.groupingBy(sc -> sc.getTimeSlot().getDay()));
 
 			for (Map.Entry<DayOfWeek, List<ScheduledClass>> dayEntry : classesByDay.entrySet()) {
-				DayOfWeek day = dayEntry.getKey(); // <-- SỬA LỖI 2: Đổi kiểu 'day'
 				List<ScheduledClass> classesOnDay = dayEntry.getValue();
 				classesOnDay.sort(Comparator.comparingInt(sc -> sc.getTimeSlot().getStartPeriod()));
 
-				// (Mềm 6: Quá tải)
-				if (classesOnDay.size() > 3) {
-					currentFitness += SOFT_CONSTRAINT_PENALTY * (classesOnDay.size() - 3);
-					softViolations++;
-					timetable.addViolation(String.format("MỀM: Nhóm %s học quá tải (%d lớp) vào %s", // <-- SỬA LỖI 3:
-																										// Dùng %s
-							studentGroup, classesOnDay.size(), day));
-				}
-
+				// Logic kiểm tra Mềm (Lỗ hổng, đi xa)
 				for (int i = 0; i < classesOnDay.size() - 1; i++) {
 					ScheduledClass classA = classesOnDay.get(i);
 					ScheduledClass classB = classesOnDay.get(i + 1);
-					int gapSize = classB.getTimeSlot().getStartPeriod() - (classA.getTimeSlot().getEndPeriod() + 1);
 
-					// (Mềm 5: Lỗ hổng)
-					if (gapSize >= 2 && gapSize <= 4) {
+					// Chỉ so sánh nếu chúng có liên quan logic sinh viên (Cha-Con hoặc cùng nhóm)
+					// Bỏ qua so sánh giữa N1 và N2 (vì là 2 nhóm người khác nhau)
+					String gA = classA.getCourse().getStudentGroup();
+					String gB = classB.getCourse().getStudentGroup();
+
+					// Nếu là N1 vs N2 -> Bỏ qua
+					if (!gA.equals(gB) && !gA.equals(baseGroup) && !gB.equals(baseGroup))
+						continue;
+
+					int gap = classB.getTimeSlot().getStartPeriod() - (classA.getTimeSlot().getEndPeriod() + 1);
+
+					// Phạt lỗ hổng
+					if (gap >= 2 && gap <= 4) {
 						currentFitness += SOFT_CONSTRAINT_PENALTY;
 						softViolations++;
-						timetable.addViolation(String.format("MỀM: Nhóm %s có 'lỗ hổng' %d tiết vào %s (giữa %s và %s)", // <--
-																															// SỬA
-																															// LỖI
-																															// 4
-								studentGroup, gapSize, day, classA.getCourse().getName(),
-								classB.getCourse().getName()));
+						timetable.addViolation("MỀM: Lỗ hổng lịch học " + baseGroup);
 					}
-
-					// (Mềm 3: Di chuyển xa)
-					if (gapSize < 3) {
-						String locA = classA.getRoom().getLocationCluster();
-						String locB = classB.getRoom().getLocationCluster(); // Sửa lỗi logic (was classA)
-						if (isFar(locA, locB)) {
-							currentFitness += SOFT_CONSTRAINT_PENALTY;
-							softViolations++;
-							timetable.addViolation(String.format(
-									"MỀM: Nhóm %s phải di chuyển xa (nghỉ %d tiết) trong %s (giữa %s và %s)", // <-- SỬA
-																												// LỖI 5
-									studentGroup, gapSize, day, locA, locB));
-						}
+					// Phạt đi xa
+					if (gap < 3
+							&& isFar(classA.getRoom().getLocationCluster(), classB.getRoom().getLocationCluster())) {
+						currentFitness += SOFT_CONSTRAINT_PENALTY;
+						softViolations++;
+						timetable.addViolation("MỀM: Di chuyển xa " + baseGroup);
 					}
 				}
 			}
 		}
 
-		// Mềm 4: Khoảng cách di chuyển (Giảng viên)
-		Map<Lecturer, List<ScheduledClass>> classesByLecturer = schedule.stream()
-				.collect(Collectors.groupingBy(ScheduledClass::getLecturer));
-
-		for (List<ScheduledClass> lecturerSchedule : classesByLecturer.values()) {
-			// ****** SỬA LỖI 1 (Giống ở trên) ******
-			Map<DayOfWeek, List<ScheduledClass>> classesByDay = lecturerSchedule.stream()
-					.collect(Collectors.groupingBy(sc -> sc.getTimeSlot().getDay()));
-
-			for (Map.Entry<DayOfWeek, List<ScheduledClass>> dayEntry : classesByDay.entrySet()) {
-				DayOfWeek day = dayEntry.getKey(); // <-- SỬA LỖI 2
-				List<ScheduledClass> classesOnDay = dayEntry.getValue();
-				classesOnDay.sort(Comparator.comparingInt(sc -> sc.getTimeSlot().getStartPeriod()));
-
-				for (int i = 0; i < classesOnDay.size() - 1; i++) {
-					ScheduledClass classA = classesOnDay.get(i);
-					ScheduledClass classB = classesOnDay.get(i + 1);
-					int gapSize = classB.getTimeSlot().getStartPeriod() - (classA.getTimeSlot().getEndPeriod() + 1);
-
-					if (gapSize < 3) {
-						String locA = classA.getRoom().getLocationCluster();
-						// ****** SỬA LỖI LOGIC NHỎ (was classA) ******
-						String locB = classB.getRoom().getLocationCluster();
-						if (isFar(locA, locB)) {
-							currentFitness += SOFT_CONSTRAINT_PENALTY;
-							softViolations++;
-							timetable.addViolation(String.format(
-									"MỀM: GV %s phải di chuyển xa (nghỉ %d tiết) trong %s (giữa %s và %s)", // <-- SỬA
-																											// LỖI 3
-									classA.getLecturer().getName(), gapSize, day, locA, locB));
-						}
-					}
-				}
-			}
-		}
-
-		// --- 4. TỔNG KẾT ---
-		String summary = String.format("Tóm tắt: %d lỗi Cứng | %d lỗi Mềm | %d điểm Thưởng", hardViolations,
-				softViolations, bonusPoints);
+		// --- TỔNG KẾT ---
+		String summary = String.format("Kết quả: %d Lỗi Cứng | %d Lỗi Mềm", hardViolations, softViolations);
 		timetable.addViolation(0, summary);
 		timetable.setFitness(currentFitness);
 	}

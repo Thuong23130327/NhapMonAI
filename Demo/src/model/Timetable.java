@@ -11,21 +11,17 @@ public class Timetable {
 
 	private List<ScheduledClass> schedule;
 	private int fitness;
-	private List<String> violations; // <-- Đây là danh sách bị thiếu
+	private List<String> violations; //Lí do cộng trừ điểm
 
 	/**
 	 * Constructor mặc định
 	 */
 	public Timetable() {
 		this.schedule = new ArrayList<>();
-		this.violations = new ArrayList<>(); // Khởi tạo danh sách
+		this.violations = new ArrayList<>(); 
 		this.fitness = Integer.MIN_VALUE; // Khởi tạo điểm fitness thấp nhất
 	}
 
-	/**
-	 * Copy Constructor (Dùng cho Elitism) QUAN TRỌNG: Xem cảnh báo lỗi logic bên
-	 * dưới
-	 */
 	public Timetable(Timetable other) {
 		// Tạm thời, chúng ta sẽ copy sâu (deep copy) danh sách
 		this.schedule = new ArrayList<>();
@@ -65,9 +61,6 @@ public class Timetable {
 		this.violations.add(violation);
 	}
 
-	/**
-	 * Thêm 1 dòng vào vị trí ĐẦU TIÊN của biên bản
-	 */
 	public void addViolation(int index, String violation) {
 		if (index == 0) {
 			this.violations.add(0, violation);
@@ -76,17 +69,11 @@ public class Timetable {
 		}
 	}
 
-	/**
-	 * Xóa biên bản cũ (Hàm này được FitnessCalculator gọi)
-	 */
+	// Dọn ds lỗi
 	public void clearViolations() {
 		this.violations.clear();
 	}
 
-	/**
-	 * Lấy toàn bộ biên bản vi phạm (Hàm này được TimetableApp gọi - SỬA LỖI CỦA
-	 * BẠN)
-	 */
 	public List<String> getViolations() {
 		return this.violations;
 	}

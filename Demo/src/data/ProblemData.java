@@ -1,4 +1,5 @@
 package data;
+
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,20 +14,16 @@ import model.Room;
 import model.TimeSlot;
 
 /**
- * Lớp này chứa TOÀN BỘ dữ liệu đầu vào của bài toán.
- * (CẬP NHẬT: THÊM MÔN PYTHON VÀ TRÍ TUỆ NHÂN TẠO)
- * * Mô phỏng Lớp "DH23DTC" (khoảng 100 SV)
- * - Môn Lý thuyết: 1 lớp chung (sĩ số 100) -> studentGroup="DH23DTC-LT"
- * - Môn Thực hành: 2 lớp song song (sĩ số 50) -> studentGroup="DH23DTC-TH1" và "DH23DTC-TH2"
- * * TỔNG CỘNG: 7 Môn học -> 7 (LT) + 12 (TH) = 19 Lớp học (events) cần xếp.
+ * DỮ LIỆU ĐẦU VÀO (PHIÊN BẢN FULL TRƯỜNG) - Khóa 21, 22, 23. - Mỗi khóa có 3
+ * lớp: DTA, DTB, DTC. - Tổng cộng: Hơn 40 đầu lớp học phần để xếp lịch.
  */
 public class ProblemData {
 
-	// Hằng số cho các Cụm
-	public static final String CLUSTER_A_TV_HD_CT = "CLUSTER_A"; // Gần
-	public static final String CLUSTER_B_RD_PV = "CLUSTER_B"; // Xa
-	public static final String CLUSTER_C_A1_A2 = "CLUSTER_C"; // Hơi xa
-	public static final String CLUSTER_D_TT_TN = "CLUSTER_D"; // Rất xa
+	// --- CẤU HÌNH CỤM PHÒNG ---
+	public static final String CLUSTER_A_TV_HD_CT = "CLUSTER_A"; // Khu A (Giảng đường chính)
+	public static final String CLUSTER_B_RD_PV = "CLUSTER_B"; // Khu B (Rạng Đông - Xa)
+	public static final String CLUSTER_C_A1_A2 = "CLUSTER_C"; // Khu C (Cẩm Tú - Hơi xa)
+	public static final String CLUSTER_D_TT_TN = "CLUSTER_D"; // Khu D (Thực hành - Rất xa)
 
 	List<Course> mandatoryCourses;
 	List<Course> allPossibleElectives;
@@ -49,134 +46,168 @@ public class ProblemData {
 	}
 
 	private void initializeData() {
-		// 1. GIẢNG VIÊN (Thêm GV Dũng và Châu)
-		Lecturer l_Binh = new Lecturer("GV01", "L.T.B.Nga", Arrays.asList("C001"));
-		Lecturer l_Tinh = new Lecturer("GV02", "P.V.Tinh", Arrays.asList("C002_LT", "C002_TH1", "C003_LT"));
-		Lecturer l_Tong = new Lecturer("GV03", "N.M.Tống", Arrays.asList("C002_TH2"));
-		Lecturer l_Toan = new Lecturer("GV04", "V.T.Toàn", Arrays.asList("C003_LT", "C003_TH1", "C003_TH2"));
-		Lecturer l_Long = new Lecturer("GV05", "P.B.Long", Arrays.asList("C004_LT", "C004_TH1", "C004_TH2", "C002_LT"));
-		Lecturer l_Hanh = new Lecturer("GV06", "N.T.M.Hương", Arrays.asList("C005_LT", "C005_TH1"));
-		Lecturer l_Dien = new Lecturer("GV07", "L.C.Diện", Arrays.asList("C005_TH2", "C005_LT"));
-		
-		// GV MỚI
-		Lecturer l_Du = new Lecturer("GV08", "N.V.Dũng", Arrays.asList("C006_LT", "C006_TH1", "C006_TH2"));
-		Lecturer l_Chau = new Lecturer("GV09", "K.H.Châu", Arrays.asList("C007_LT", "C007_TH1", "C007_TH2"));
+		// =============================================================
+		// 1. GIẢNG VIÊN (Cập nhật chuyên môn "khủng" để dạy 3 khóa)
+		// =============================================================
 
-		// Thêm sở thích
-		l_Long.setUndesiredTimeSlotIds(Arrays.asList("T1", "T13")); // Không muốn dạy sáng T2, T6
-		l_Toan.setPreferredTimeSlotIds(Arrays.asList("T5", "T8")); // Thích dạy chiều T3, T4
+		// Cô Nga: Chuyên dạy các môn Lý luận & Đạo đức (Dạy K23, K21)
+		Lecturer l_Nga = new Lecturer("GV01", "L.T.B.Nga",
+				Arrays.asList("K23_LSD_A", "K23_LSD_B", "K23_LSD_C", "K21_ETHICS_A", "K21_ETHICS_B", "K21_ETHICS_C"));
 
-		this.lecturers = Arrays.asList(l_Binh, l_Tinh, l_Tong, l_Toan, l_Long, l_Hanh, l_Dien, l_Du, l_Chau);
+		// Thầy Tỉnh: Chuyên Mạng & Bảo mật (Dạy K23, K22)
+		Lecturer l_Tinh = new Lecturer("GV02", "P.V.Tinh", Arrays.asList("K23_NET_LT_A", "K23_NET_LT_B", "K23_NET_LT_C",
+				"K23_NET_TH_A1", "K23_NET_TH_B1", "K23_NET_TH_C1", "K22_SEC_LT_A", "K22_SEC_LT_B"));
 
-		// 2. PHÒNG HỌC (Thêm 5 phòng mới)
-		Room p_HD303 = new Room("HD303", 120, "LECTURE", CLUSTER_A_TV_HD_CT);
-		Room p_TV202 = new Room("TV202", 60, "LAB", CLUSTER_A_TV_HD_CT);
-		Room p_P6 = new Room("P6", 60, "LAB", CLUSTER_D_TT_TN); // Xa
-		Room p_P5 = new Room("P5", 60, "LAB", CLUSTER_D_TT_TN); // Xa
-		Room p_TV103 = new Room("TV103", 120, "LECTURE", CLUSTER_A_TV_HD_CT);
-		Room p_P2 = new Room("P2", 60, "LAB", CLUSTER_D_TT_TN); // Xa
-		Room p_RD306 = new Room("RD306", 120, "LECTURE", CLUSTER_B_RD_PV); // Rất xa
-		Room p_P1 = new Room("P1", 60, "LAB", CLUSTER_D_TT_TN); // Xa
-		Room p_RD204 = new Room("RD204", 120, "LECTURE", CLUSTER_B_RD_PV); // Rất xa
-		Room p_P4 = new Room("P4", 60, "LAB", CLUSTER_D_TT_TN); // Xa
-		
-		// PHÒNG MỚI
-		Room p_A101 = new Room("A101", 120, "LECTURE", CLUSTER_C_A1_A2);
-		Room p_A102 = new Room("A102", 120, "LECTURE", CLUSTER_C_A1_A2);
-		Room p_C101 = new Room("C101", 60, "LAB", CLUSTER_A_TV_HD_CT);
-		Room p_C102 = new Room("C102", 60, "LAB", CLUSTER_A_TV_HD_CT);
-		Room p_C103 = new Room("C103", 60, "LAB", CLUSTER_A_TV_HD_CT);
-		
+		// Thầy Tống: Chuyên Công nghệ PM & Thực hành Mạng (Dạy K23, K22)
+		Lecturer l_Tong = new Lecturer("GV03", "N.M.Tống",
+				Arrays.asList("K23_NET_TH_A2", "K23_NET_TH_B2", "K23_NET_TH_C2", "K22_SE_LT_A", "K22_SE_LT_B",
+						"K22_SE_LT_C", "K22_SE_TH_A1", "K22_SE_TH_B1", "K22_SE_TH_C1"));
+
+		// Thầy Toàn: Chuyên Web & Mobile (Dạy K23, K22)
+		Lecturer l_Toan = new Lecturer("GV04", "V.T.Toàn", Arrays.asList("K23_WEB_LT_A", "K23_WEB_LT_B", "K23_WEB_LT_C",
+				"K22_MOB_LT_A", "K22_MOB_LT_B", "K22_MOB_LT_C"));
+
+		// Thầy Long: Chuyên Python & Quản lý dự án (Dạy K23, K21)
+		Lecturer l_Long = new Lecturer("GV05", "P.B.Long", Arrays.asList("K23_PY_LT_A", "K23_PY_LT_B", "K23_PY_LT_C",
+				"K23_PY_TH_A1", "K23_PY_TH_B1", "K23_PY_TH_C1", "K21_PM_LT_A", "K21_PM_LT_B", "K21_PM_LT_C"));
+
+		// Thầy Dũng: Chuyên dạy Thực hành (Hỗ trợ tất cả các môn TH)
+		Lecturer l_Dung = new Lecturer("GV06", "N.V.Dũng",
+				Arrays.asList("K23_WEB_TH_A1", "K23_WEB_TH_B1", "K23_WEB_TH_C1", "K22_MOB_TH_A1", "K22_MOB_TH_B1",
+						"K22_MOB_TH_C1", "K22_SE_TH_A2", "K22_SE_TH_B2", "K22_SE_TH_C2"));
+
+		// Cô Châu: Chuyên AI & Đồ án (Dạy K23, K21)
+		Lecturer l_Chau = new Lecturer("GV07", "K.H.Châu",
+				Arrays.asList("K23_AI_LT_A", "K23_AI_LT_B", "K23_AI_LT_C", "K21_CAP_A", "K21_CAP_B", "K21_CAP_C"));
+
+		// Thêm sở thích GV
+		l_Long.setUndesiredTimeSlotIds(Arrays.asList("T1", "T2")); // Né sáng Thứ 2
+		l_Toan.setPreferredTimeSlotIds(Arrays.asList("T7", "T8", "T9")); // Thích dạy Thứ 4
+
+		this.lecturers = Arrays.asList(l_Nga, l_Tinh, l_Tong, l_Toan, l_Long, l_Dung, l_Chau);
+
+		// =============================================================
+		// 2. PHÒNG HỌC (15 Phòng - Đủ sức chứa cho 3 khóa)
+		// =============================================================
 		this.rooms = Arrays.asList(
-			p_HD303, p_TV202, p_P6, p_P5, p_TV103, p_P2, p_RD306, p_P1, p_RD204, p_P4,
-			p_A101, p_A102, p_C101, p_C102, p_C103
+				// Giảng đường lớn (Lý thuyết)
+				new Room("HD303", 150, "LECTURE", CLUSTER_A_TV_HD_CT),
+				new Room("TV103", 120, "LECTURE", CLUSTER_A_TV_HD_CT),
+				new Room("RD306", 120, "LECTURE", CLUSTER_B_RD_PV), new Room("RD204", 100, "LECTURE", CLUSTER_B_RD_PV),
+				new Room("A101", 100, "LECTURE", CLUSTER_C_A1_A2), new Room("A102", 100, "LECTURE", CLUSTER_C_A1_A2),
+
+				// Phòng máy (Thực hành)
+				new Room("PM_01", 60, "LAB", CLUSTER_D_TT_TN), new Room("PM_02", 60, "LAB", CLUSTER_D_TT_TN),
+				new Room("PM_03", 60, "LAB", CLUSTER_D_TT_TN), new Room("PM_04", 60, "LAB", CLUSTER_A_TV_HD_CT), // Phòng
+																													// máy
+																													// khu
+																													// A
+				new Room("PM_05", 60, "LAB", CLUSTER_A_TV_HD_CT), new Room("PM_06", 60, "LAB", CLUSTER_C_A1_A2) // Phòng
+																												// máy
+																												// khu C
 		);
 
-		// 3. TIMESLOTS (Chia nhỏ 15 tiết)
-		TimeSlot t_2_1_3 = new TimeSlot("T1", DayOfWeek.MONDAY, 1, 3);
-		TimeSlot t_2_4_6 = new TimeSlot("T2", DayOfWeek.MONDAY, 4, 6);
-		TimeSlot t_2_7_9 = new TimeSlot("T3", DayOfWeek.MONDAY, 7, 9);
-		
-		TimeSlot t_3_1_3 = new TimeSlot("T4", DayOfWeek.TUESDAY, 1, 3);
-		TimeSlot t_3_4_6 = new TimeSlot("T5", DayOfWeek.TUESDAY, 4, 6);
-		TimeSlot t_3_7_9 = new TimeSlot("T6", DayOfWeek.TUESDAY, 7, 9);
+		// =============================================================
+		// 3. TIMESLOTS (5 Ngày x 3 Ca = 15 Slots)
+		// =============================================================
+		List<TimeSlot> slots = new ArrayList<>();
+		int slotId = 1;
+		DayOfWeek[] days = { DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY,
+				DayOfWeek.FRIDAY };
+		for (DayOfWeek day : days) {
+			slots.add(new TimeSlot("T" + slotId++, day, 1, 3)); // Sáng sớm
+			slots.add(new TimeSlot("T" + slotId++, day, 4, 6)); // Sáng muộn
+			slots.add(new TimeSlot("T" + slotId++, day, 7, 9)); // Chiều
+		}
+		this.timeSlots = slots;
 
-		TimeSlot t_4_1_3 = new TimeSlot("T7", DayOfWeek.WEDNESDAY, 1, 3);
-		TimeSlot t_4_4_6 = new TimeSlot("T8", DayOfWeek.WEDNESDAY, 4, 6);
-		TimeSlot t_4_7_9 = new TimeSlot("T9", DayOfWeek.WEDNESDAY, 7, 9);
-		
-		TimeSlot t_5_1_3 = new TimeSlot("T10", DayOfWeek.THURSDAY, 1, 3);
-		TimeSlot t_5_4_6 = new TimeSlot("T11", DayOfWeek.THURSDAY, 4, 6);
-		TimeSlot t_5_7_9 = new TimeSlot("T12", DayOfWeek.THURSDAY, 7, 9);
-		
-		TimeSlot t_6_1_3 = new TimeSlot("T13", DayOfWeek.FRIDAY, 1, 3);
-		TimeSlot t_6_4_6 = new TimeSlot("T14", DayOfWeek.FRIDAY, 4, 6);
-		TimeSlot t_6_7_9 = new TimeSlot("T15", DayOfWeek.FRIDAY, 7, 9);
+		// =============================================================
+		// 4. MÔN HỌC (PHẦN QUAN TRỌNG NHẤT)
+		// =============================================================
+		List<Course> courses = new ArrayList<>();
+		String tK23 = "15/09 - 30/12/2025";
+		String tK22 = "01/10 - 15/01/2026";
+		String tK21 = "15/09 - 30/12/2025";
 
-		this.timeSlots = Arrays.asList(
-			t_2_1_3, t_2_4_6, t_2_7_9, t_3_1_3, t_3_4_6, t_3_7_9,
-			t_4_1_3, t_4_4_6, t_4_7_9, t_5_1_3, t_5_4_6, t_5_7_9,
-			t_6_1_3, t_6_4_6, t_6_7_9
-		);
+		// ---------------------------------------------------------
+		// KHÓA 23 (Năm 2): 3 Lớp (DTA, DTB, DTC)
+		// Môn học: Lịch sử Đảng, Mạng máy tính, Lập trình Web, Python
+		// ---------------------------------------------------------
 
-		// 4. MÔN HỌC (ĐÃ CẬP NHẬT)
-		String thoiGianHocMacDinh = "15/09/25 - 01/01/26";
+		// >> LỚP DH23DTA
+		courses.add(new Course("K23_LSD_A", "Lịch sử Đảng", 80, "DH23DTA", "LECTURE", 3, "23A", tK23));
+		courses.add(new Course("K23_NET_LT_A", "Mạng máy tính (LT)", 80, "DH23DTA", "LECTURE", 3, "23A", tK23));
+		courses.add(new Course("K23_NET_TH_A1", "Mạng máy tính (TH)", 40, "DH23DTA_N1", "LAB", 2, "23A-1", tK23));
+		courses.add(new Course("K23_NET_TH_A2", "Mạng máy tính (TH)", 40, "DH23DTA_N2", "LAB", 2, "23A-2", tK23));
+		courses.add(new Course("K23_WEB_LT_A", "Lập trình Web (LT)", 80, "DH23DTA", "LECTURE", 3, "23A", tK23));
+		courses.add(new Course("K23_WEB_TH_A1", "Lập trình Web (TH)", 40, "DH23DTA_N1", "LAB", 2, "23A-1", tK23));
 
-		// (id, name, studentCount, studentGroup, requiredRoomType, credits, toNhom, thoiGianHoc)
-		
-		// Môn 1: Lịch sử Đảng (1 lớp LT)
-		Course c001 = new Course("C001", "Lịch sử Đảng", 100, "DH23DTC-LT", "LECTURE", 3, "19", thoiGianHocMacDinh);
-		
-		// Môn 2: Lập trình mạng (1 LT, 2 TH)
-		Course c002_LT = new Course("C002_LT", "Lập trình mạng (LT)", 100, "DH23DTC-LT", "LECTURE", 2, "08", thoiGianHocMacDinh);
-		Course c002_TH1 = new Course("C002_TH1", "Lập trình mạng (TH)", 50, "DH23DTC-TH1", "LAB", 2, "03-01", thoiGianHocMacDinh);
-		Course c002_TH2 = new Course("C002_TH2", "Lập trình mạng (TH)", 50, "DH23DTC-TH2", "LAB", 2, "03-02", thoiGianHocMacDinh);
+		// >> LỚP DH23DTB
+		courses.add(new Course("K23_LSD_B", "Lịch sử Đảng", 80, "DH23DTB", "LECTURE", 3, "23B", tK23));
+		courses.add(new Course("K23_NET_LT_B", "Mạng máy tính (LT)", 80, "DH23DTB", "LECTURE", 3, "23B", tK23));
+		courses.add(new Course("K23_NET_TH_B1", "Mạng máy tính (TH)", 40, "DH23DTB_N1", "LAB", 2, "23B-1", tK23));
+		courses.add(new Course("K23_NET_TH_B2", "Mạng máy tính (TH)", 40, "DH23DTB_N2", "LAB", 2, "23B-2", tK23));
+		courses.add(new Course("K23_PY_LT_B", "Python (LT)", 80, "DH23DTB", "LECTURE", 3, "23B", tK23));
+		courses.add(new Course("K23_PY_TH_B1", "Python (TH)", 40, "DH23DTB_N1", "LAB", 2, "23B-1", tK23));
 
-		// Môn 3: Lập trình .NET (1 LT, 2 TH)
-		Course c003_LT = new Course("C003_LT", "Lập trình .NET (LT)", 100, "DH23DTC-LT", "LECTURE", 2, "01", thoiGianHocMacDinh);
-		Course c003_TH1 = new Course("C003_TH1", "Lập trình .NET (TH)", 50, "DH23DTC-TH1", "LAB", 2, "01-01", thoiGianHocMacDinh);
-		Course c003_TH2 = new Course("C003_TH2", "Lập trình .NET (TH)", 50, "DH23DTC-TH2", "LAB", 2, "01-02", thoiGianHocMacDinh);
-		
-		// Môn 4: Lập trình Web (1 LT, 2 TH)
-		Course c004_LT = new Course("C004_LT", "Lập trình Web (LT)", 100, "DH23DTC-LT", "LECTURE", 2, "03", thoiGianHocMacDinh);
-		Course c004_TH1 = new Course("C004_TH1", "Lập trình Web (TH)", 50, "DH23DTC-TH1", "LAB", 2, "03-01", thoiGianHocMacDinh);
-		Course c004_TH2 = new Course("C004_TH2", "Lập trình Web (TH)", 50, "DH23DTC-TH2", "LAB", 2, "03-02", thoiGianHocMacDinh);
-		
-		// Môn 5: Hệ quản trị CSDL (1 LT, 2 TH)
-		Course c005_LT = new Course("C005_LT", "Hệ quản trị CSDL (LT)", 100, "DH23DTC-LT", "LECTURE", 2, "03", thoiGianHocMacDinh);
-		Course c005_TH1 = new Course("C005_TH1", "Hệ quản trị CSDL (TH)", 50, "DH23DTC-TH1", "LAB", 1, "03-01", thoiGianHocMacDinh);
-		Course c005_TH2 = new Course("C005_TH2", "Hệ quản trị CSDL (TH)", 50, "DH23DTC-TH2", "LAB", 1, "03-02", thoiGianHocMacDinh);
-		
-		// --- MÔN HỌC MỚI ---
-		// Môn 6: Lập trình Python (1 LT, 2 TH)
-		Course c006_LT = new Course("C006_LT", "Lập trình Python (LT)", 100, "DH23DTC-LT", "LECTURE", 2, "01", thoiGianHocMacDinh);
-		Course c006_TH1 = new Course("C006_TH1", "Lập trình Python (TH)", 50, "DH23DTC-TH1", "LAB", 2, "01-01", thoiGianHocMacDinh);
-		Course c006_TH2 = new Course("C006_TH2", "Lập trình Python (TH)", 50, "DH23DTC-TH2", "LAB", 2, "01-02", thoiGianHocMacDinh);
-		
-		// Môn 7: Nhập môn TTNT (1 LT, 2 TH)
-		Course c007_LT = new Course("C007_LT", "Nhập môn TTNT (LT)", 100, "DH23DTC-LT", "LECTURE", 2, "03", thoiGianHocMacDinh);
-		Course c007_TH1 = new Course("C007_TH1", "Nhập môn TTNT (TH)", 50, "DH23DTC-TH1", "LAB", 2, "03-01", thoiGianHocMacDinh);
-		Course c007_TH2 = new Course("C007_TH2", "Nhập môn TTNT (TH)", 50, "DH23DTC-TH2", "LAB", 2, "03-02", thoiGianHocMacDinh);
-		// --- KẾT THÚC MÔN HỌC MỚI ---
+		// >> LỚP DH23DTC
+		courses.add(new Course("K23_LSD_C", "Lịch sử Đảng", 80, "DH23DTC", "LECTURE", 3, "23C", tK23));
+		courses.add(new Course("K23_NET_LT_C", "Mạng máy tính (LT)", 80, "DH23DTC", "LECTURE", 3, "23C", tK23));
+		courses.add(new Course("K23_NET_TH_C1", "Mạng máy tính (TH)", 40, "DH23DTC_N1", "LAB", 2, "23C-1", tK23));
+		courses.add(new Course("K23_NET_TH_C2", "Mạng máy tính (TH)", 40, "DH23DTC_N2", "LAB", 2, "23C-2", tK23));
+		courses.add(new Course("K23_AI_LT_C", "Trí tuệ nhân tạo", 80, "DH23DTC", "LECTURE", 3, "23C", tK23));
 
-		this.mandatoryCourses = Arrays.asList(
-			c001, 
-			c002_LT, c002_TH1, c002_TH2,
-			c003_LT, c003_TH1, c003_TH2,
-			c004_LT, c004_TH1, c004_TH2,
-			c005_LT, c005_TH1, c005_TH2,
-			c006_LT, c006_TH1, c006_TH2, // Thêm
-			c007_LT, c007_TH1, c007_TH2  // Thêm
-		);
-		
-		// 5. MÔN HỌC TỰ CHỌN (Bỏ qua cho data này)
+		// ---------------------------------------------------------
+		// KHÓA 22 (Năm 3): 3 Lớp (DTA, DTB, DTC)
+		// Môn học: Công nghệ PM, An toàn TT, Lập trình Mobile
+		// ---------------------------------------------------------
+
+		// >> LỚP DH22DTA
+		courses.add(new Course("K22_SE_LT_A", "Công nghệ PM (LT)", 70, "DH22DTA", "LECTURE", 3, "22A", tK22));
+		courses.add(new Course("K22_SE_TH_A1", "Công nghệ PM (TH)", 35, "DH22DTA_N1", "LAB", 2, "22A-1", tK22));
+		courses.add(new Course("K22_SE_TH_A2", "Công nghệ PM (TH)", 35, "DH22DTA_N2", "LAB", 2, "22A-2", tK22));
+		courses.add(new Course("K22_MOB_LT_A", "Lập trình Mobile (LT)", 70, "DH22DTA", "LECTURE", 3, "22A", tK22));
+		courses.add(new Course("K22_MOB_TH_A1", "Lập trình Mobile (TH)", 35, "DH22DTA_N1", "LAB", 2, "22A-1", tK22));
+
+		// >> LỚP DH22DTB
+		courses.add(new Course("K22_SE_LT_B", "Công nghệ PM (LT)", 70, "DH22DTB", "LECTURE", 3, "22B", tK22));
+		courses.add(new Course("K22_SE_TH_B1", "Công nghệ PM (TH)", 35, "DH22DTB_N1", "LAB", 2, "22B-1", tK22));
+		courses.add(new Course("K22_SE_TH_B2", "Công nghệ PM (TH)", 35, "DH22DTB_N2", "LAB", 2, "22B-2", tK22));
+		courses.add(new Course("K22_SEC_LT_B", "An toàn thông tin", 70, "DH22DTB", "LECTURE", 3, "22B", tK22));
+
+		// >> LỚP DH22DTC
+		courses.add(new Course("K22_SE_LT_C", "Công nghệ PM (LT)", 70, "DH22DTC", "LECTURE", 3, "22C", tK22));
+		courses.add(new Course("K22_SE_TH_C1", "Công nghệ PM (TH)", 35, "DH22DTC_N1", "LAB", 2, "22C-1", tK22));
+		courses.add(new Course("K22_SE_TH_C2", "Công nghệ PM (TH)", 35, "DH22DTC_N2", "LAB", 2, "22C-2", tK22));
+		courses.add(new Course("K22_MOB_LT_C", "Lập trình Mobile (LT)", 70, "DH22DTC", "LECTURE", 3, "22C", tK22));
+		courses.add(new Course("K22_MOB_TH_C1", "Lập trình Mobile (TH)", 35, "DH22DTC_N1", "LAB", 2, "22C-1", tK22));
+
+		// ---------------------------------------------------------
+		// KHÓA 21 (Năm 4): 3 Lớp (DTA, DTB, DTC)
+		// Môn học: Quản lý dự án, Đạo đức nghề nghiệp, Đồ án tốt nghiệp
+		// ---------------------------------------------------------
+
+		// >> LỚP DH21DTA
+		courses.add(new Course("K21_PM_LT_A", "Quản lý dự án", 60, "DH21DTA", "LECTURE", 3, "21A", tK21));
+		courses.add(new Course("K21_ETHICS_A", "Đạo đức nghề nghiệp", 60, "DH21DTA", "LECTURE", 2, "21A", tK21));
+		courses.add(new Course("K21_CAP_A", "Đồ án tốt nghiệp", 60, "DH21DTA", "LECTURE", 5, "21A", tK21));
+
+		// >> LỚP DH21DTB
+		courses.add(new Course("K21_PM_LT_B", "Quản lý dự án", 60, "DH21DTB", "LECTURE", 3, "21B", tK21));
+		courses.add(new Course("K21_ETHICS_B", "Đạo đức nghề nghiệp", 60, "DH21DTB", "LECTURE", 2, "21B", tK21));
+		courses.add(new Course("K21_CAP_B", "Đồ án tốt nghiệp", 60, "DH21DTB", "LECTURE", 5, "21B", tK21));
+
+		// >> LỚP DH21DTC
+		courses.add(new Course("K21_PM_LT_C", "Quản lý dự án", 60, "DH21DTC", "LECTURE", 3, "21C", tK21));
+		courses.add(new Course("K21_ETHICS_C", "Đạo đức nghề nghiệp", 60, "DH21DTC", "LECTURE", 2, "21C", tK21));
+		courses.add(new Course("K21_CAP_C", "Đồ án tốt nghiệp", 60, "DH21DTC", "LECTURE", 5, "21C", tK21));
+
+		this.mandatoryCourses = courses;
 		this.allPossibleElectives = new ArrayList<>();
-
-		// 6. LUẬT TỰ CHỌN (Bỏ qua cho data này)
 		this.electiveRequirements = new ArrayList<>();
 	}
 
-	// Getters
+	// Getters giữ nguyên
 	public List<Course> getMandatoryCourses() {
 		return mandatoryCourses;
 	}
